@@ -1,0 +1,21 @@
+# Compiled binary
+/snipkit
+/dist/
+*.exe
+*.test
+
+# Test / coverage artifacts
+*.out
+coverage.html
+
+# Editor & OS junk
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
+
+# Local snippet stores created while hacking
+*.db
+*.sqlite
+scratch/
