@@ -1,9 +1,12 @@
+// Command snipkit is a fast terminal snippet manager.
 package main
 
-import "fmt"
+import (
+	"os"
 
-// Placeholder entrypoint. Real command dispatch lands once the internal
-// packages exist.
+	"github.com/realmaxc/snipkit/internal/cli"
+)
+
 func main() {
-	fmt.Println("snipkit")
+	os.Exit(cli.Run(os.Args[1:]))
 }
