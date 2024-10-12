@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 
 	"github.com/realmaxc/snipkit/internal/snippet"
@@ -58,13 +59,46 @@ func (s *jsonStore) save() error {
 	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
 		return err
 	}
-	// Write to a sibling temp file and rename so a crash never leaves a
-	// half-written store behind.
 	tmp := s.path + ".tmp"
 	if err := os.WriteFile(tmp, append(b, '\n'), 0o600); err != nil {
 		return err
 	}
 	return os.Rename(tmp, s.path)
+}
+
+// Add appends a snippet and persists the store.
+func (s *jsonStore) Add(sn snippet.Snippet) (snippet.Snippet, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data = append(s.data, sn)
+	if err := s.save(); err != nil {
+		return snippet.Snippet{}, err
+	}
+	return sn, nil
+}
+
+// Get returns the snippet with the given id.
+func (s *jsonStore) Get(id string) (snippet.Snippet, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, sn := range s.data {
+		if sn.ID == id {
+			return sn, nil
+		}
+	}
+	return snippet.Snippet{}, ErrNotFound
+}
+
+// All returns every snippet, newest first.
+func (s *jsonStore) All() ([]snippet.Snippet, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]snippet.Snippet, len(s.data))
+	copy(out, s.data)
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].CreatedAt.After(out[j].CreatedAt)
+	})
+	return out, nil
 }
 
 // Close implements Store; the JSON backend keeps nothing open between calls.
