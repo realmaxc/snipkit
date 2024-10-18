@@ -103,3 +103,29 @@ func (s *jsonStore) All() ([]snippet.Snippet, error) {
 
 // Close implements Store; the JSON backend keeps nothing open between calls.
 func (s *jsonStore) Close() error { return nil }
+
+// Update replaces the stored snippet carrying the same id.
+func (s *jsonStore) Update(sn snippet.Snippet) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.data {
+		if s.data[i].ID == sn.ID {
+			s.data[i] = sn
+			return s.save()
+		}
+	}
+	return ErrNotFound
+}
+
+// Delete removes the snippet with the given id.
+func (s *jsonStore) Delete(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.data {
+		if s.data[i].ID == id {
+			s.data = append(s.data[:i], s.data[i+1:]...)
+			return s.save()
+		}
+	}
+	return ErrNotFound
+}
