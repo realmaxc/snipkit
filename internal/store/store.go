@@ -27,3 +27,26 @@ type Store interface {
 	// Close flushes and releases any resources held by the store.
 	Close() error
 }
+
+// Open opens the named backend at path. Supported backends are "json" and
+// "sqlite".
+func Open(backend, path string) (Store, error) {
+	switch backend {
+	case "json":
+		return openJSON(path)
+	case "sqlite":
+		return nil, errUnsupportedBackend(backend)
+	default:
+		return nil, errUnsupportedBackend(backend)
+	}
+}
+
+func errUnsupportedBackend(name string) error {
+	return &unsupportedBackendError{name: name}
+}
+
+type unsupportedBackendError struct{ name string }
+
+func (e *unsupportedBackendError) Error() string {
+	return "unsupported store backend: " + e.name
+}
