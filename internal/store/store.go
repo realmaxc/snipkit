@@ -35,7 +35,7 @@ func Open(backend, path string) (Store, error) {
 	case "json":
 		return openJSON(path)
 	case "sqlite":
-		return nil, errUnsupportedBackend(backend)
+		return openSQLite(path)
 	default:
 		return nil, errUnsupportedBackend(backend)
 	}
