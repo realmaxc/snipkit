@@ -114,3 +114,39 @@ func (s *sqlStore) All() ([]snippet.Snippet, error) {
 
 // Close closes the underlying database handle.
 func (s *sqlStore) Close() error { return s.db.Close() }
+
+// Update replaces the stored snippet carrying the same id.
+func (s *sqlStore) Update(sn snippet.Snippet) error {
+	tags, err := json.Marshal(sn.Tags)
+	if err != nil {
+		return err
+	}
+	res, err := s.db.Exec(
+		`UPDATE snippets SET title = ?, body = ?, lang = ?, tags = ?, updated_at = ? WHERE id = ?`,
+		sn.Title, sn.Body, sn.Lang, string(tags), sn.UpdatedAt.Format(time.RFC3339Nano), sn.ID,
+	)
+	if err != nil {
+		return err
+	}
+	return affectedOrNotFound(res)
+}
+
+// Delete removes the snippet with the given id.
+func (s *sqlStore) Delete(id string) error {
+	res, err := s.db.Exec(`DELETE FROM snippets WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	return affectedOrNotFound(res)
+}
+
+func affectedOrNotFound(res sql.Result) error {
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
