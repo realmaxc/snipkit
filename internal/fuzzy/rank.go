@@ -28,8 +28,7 @@ func Score(pattern, text string) (int, bool) {
 		total += pts
 		prev = pos
 	}
-	total -= positions[0]                      // penalise a late first match
-	total -= (len(runes) - len(positions)) / 8 // mild penalty for long text
+	total -= positions[0] // penalise a late first match
 	return total, true
 }
 
