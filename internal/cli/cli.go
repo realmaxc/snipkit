@@ -3,11 +3,13 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"sort"
 
+	"github.com/realmaxc/snipkit/internal/store"
 	"github.com/realmaxc/snipkit/internal/version"
 )
 
@@ -19,6 +21,11 @@ const (
 	exitNotFound = 3
 )
 
+// errSilent is returned by a subcommand that has already written its own error
+// and usage output; the dispatcher then exits with a usage code and prints
+// nothing further.
+var errSilent = errors.New("usage error already reported")
+
 // command is a single snipkit subcommand.
 type command struct {
 	name    string
@@ -26,8 +33,8 @@ type command struct {
 	run     func(ctx *appContext, args []string) error
 }
 
-// appContext carries shared dependencies into subcommands so they can be
-// swapped out in tests.
+// appContext carries shared IO into subcommands so they can be exercised in
+// tests without touching the real terminal.
 type appContext struct {
 	stdout io.Writer
 	stderr io.Writer
@@ -79,7 +86,13 @@ func run(ctx *appContext, args []string) int {
 }
 
 func reportError(w io.Writer, err error) int {
+	if errors.Is(err, errSilent) {
+		return exitUsage
+	}
 	fmt.Fprintln(w, "snipkit:", err)
+	if errors.Is(err, store.ErrNotFound) {
+		return exitNotFound
+	}
 	return exitError
 }
 
