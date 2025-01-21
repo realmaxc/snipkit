@@ -1,9 +1,12 @@
 package cli
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -51,7 +54,7 @@ func runAdd(ctx *appContext, args []string) error {
 	fs.SetOutput(ctx.stderr)
 	title := fs.String("title", "", "short title (defaults to the first body line)")
 	lang := fs.String("lang", "", "language or shell, e.g. sh, go, py")
-	body := fs.String("body", "", "snippet body; read from stdin when omitted")
+	body := fs.String("body", "", "snippet body; read from stdin or $EDITOR when omitted")
 	var tags multiFlag
 	fs.Var(&tags, "tag", "tag to attach (repeatable)")
 	fs.Usage = usageFor(ctx.stderr, "snipkit add [-title T] [-lang L] [-tag t]... [-body TEXT]", fs)
@@ -59,20 +62,19 @@ func runAdd(ctx *appContext, args []string) error {
 		return errSilent
 	}
 
-	text := *body
-	if text == "" {
-		b, err := io.ReadAll(ctx.stdin)
-		if err != nil {
-			return err
-		}
-		text = string(b)
-	}
-
-	st, _, err := openStore()
+	st, cfg, err := openStore()
 	if err != nil {
 		return err
 	}
 	defer func() { _ = st.Close() }()
+
+	text := *body
+	if text == "" {
+		text, err = readBody(ctx, cfg.Editor)
+		if err != nil {
+			return err
+		}
+	}
 
 	now := time.Now()
 	sn := snippet.Snippet{
@@ -94,4 +96,61 @@ func runAdd(ctx *appContext, args []string) error {
 	}
 	fmt.Fprintf(ctx.stdout, "added %s  %s\n", saved.ID, saved.Title)
 	return nil
+}
+
+// readBody reads a snippet body from stdin when input is piped, otherwise it
+// opens the configured editor on a scratch file.
+func readBody(ctx *appContext, editor string) (string, error) {
+	if f, ok := ctx.stdin.(*os.File); ok && isTerminal(f) {
+		return editBuffer(editor, "")
+	}
+	b, err := io.ReadAll(ctx.stdin)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func isTerminal(f *os.File) bool {
+	info, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&os.ModeCharDevice != 0
+}
+
+// editBuffer opens editor on a temp file seeded with initial and returns the
+// edited contents.
+func editBuffer(editor, initial string) (string, error) {
+	tmp, err := os.CreateTemp("", "snipkit-*.txt")
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = os.Remove(tmp.Name()) }()
+	if initial != "" {
+		if _, err := tmp.WriteString(initial); err != nil {
+			return "", err
+		}
+	}
+	if err := tmp.Close(); err != nil {
+		return "", err
+	}
+	if err := runEditor(editor, tmp.Name()); err != nil {
+		return "", err
+	}
+	out, err := os.ReadFile(tmp.Name())
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
+}
+
+func runEditor(editor, path string) error {
+	parts := strings.Fields(editor)
+	if len(parts) == 0 {
+		return errors.New("no editor configured; set $EDITOR")
+	}
+	cmd := exec.Command(parts[0], append(parts[1:], path)...)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	return cmd.Run()
 }
