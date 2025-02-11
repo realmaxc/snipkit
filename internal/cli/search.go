@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/realmaxc/snipkit/internal/fuzzy"
 	"github.com/realmaxc/snipkit/internal/snippet"
 )
 
 func init() {
-	register(command{name: "search", summary: "search snippets by text", run: runSearch})
+	register(command{name: "search", summary: "fuzzy-search snippets", run: runSearch})
 }
 
 func runSearch(ctx *appContext, args []string) error {
@@ -32,7 +33,7 @@ func runSearch(ctx *appContext, args []string) error {
 	if err != nil {
 		return err
 	}
-	matches := substringSearch(all, query)
+	matches := rankSnippets(all, query)
 	if *limit > 0 && len(matches) > *limit {
 		matches = matches[:*limit]
 	}
@@ -44,16 +45,20 @@ func runSearch(ctx *appContext, args []string) error {
 	return nil
 }
 
-func substringSearch(in []snippet.Snippet, query string) []snippet.Snippet {
-	if query == "" {
+// rankSnippets returns snippets that fuzzy-match query, best first. An empty
+// query keeps the store's own newest-first ordering.
+func rankSnippets(in []snippet.Snippet, query string) []snippet.Snippet {
+	if strings.TrimSpace(query) == "" {
 		return in
 	}
-	q := strings.ToLower(query)
-	out := make([]snippet.Snippet, 0, len(in))
-	for _, s := range in {
-		if strings.Contains(strings.ToLower(haystack(s)), q) {
-			out = append(out, s)
-		}
+	cands := make([]fuzzy.Candidate, len(in))
+	for i, s := range in {
+		cands[i] = fuzzy.Candidate{Index: i, Text: haystack(s)}
+	}
+	ranked := fuzzy.Rank(query, cands)
+	out := make([]snippet.Snippet, 0, len(ranked))
+	for _, r := range ranked {
+		out = append(out, in[r.Index])
 	}
 	return out
 }
