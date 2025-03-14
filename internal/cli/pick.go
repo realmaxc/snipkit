@@ -3,12 +3,14 @@ package cli
 import (
 	"bufio"
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 
+	"github.com/realmaxc/snipkit/internal/clip"
 	"github.com/realmaxc/snipkit/internal/snippet"
 )
 
@@ -17,7 +19,14 @@ func init() {
 }
 
 func runPick(ctx *appContext, args []string) error {
-	_ = args
+	fs := flag.NewFlagSet("pick", flag.ContinueOnError)
+	fs.SetOutput(ctx.stderr)
+	toClip := fs.Bool("c", false, "also copy the selection to the clipboard")
+	fs.Usage = usageFor(ctx.stderr, "snipkit pick [-c]", fs)
+	if err := fs.Parse(args); err != nil {
+		return errSilent
+	}
+
 	st, _, err := openStore()
 	if err != nil {
 		return err
@@ -38,6 +47,12 @@ func runPick(ctx *appContext, args []string) error {
 	}
 	if !ok {
 		return nil // the user cancelled
+	}
+	if *toClip {
+		if err := clip.Copy(sn.Body); err != nil {
+			return err
+		}
+		fmt.Fprintf(ctx.stderr, "copied %s to clipboard\n", sn.ID)
 	}
 	fmt.Fprintln(ctx.stdout, sn.Body)
 	return nil
