@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/realmaxc/snipkit/internal/store"
 	"github.com/realmaxc/snipkit/internal/version"
@@ -25,6 +26,13 @@ const (
 // and usage output; the dispatcher then exits with a usage code and prints
 // nothing further.
 var errSilent = errors.New("usage error already reported")
+
+// overrides collects the global flags that sit in front of the subcommand and
+// win over configuration and the environment.
+var overrides struct {
+	dbPath  string
+	backend string
+}
 
 // command is a single snipkit subcommand.
 type command struct {
@@ -61,6 +69,12 @@ func Run(args []string) int {
 }
 
 func run(ctx *appContext, args []string) int {
+	rest, err := parseGlobalFlags(args)
+	if err != nil {
+		fmt.Fprintln(ctx.stderr, "snipkit:", err)
+		return exitUsage
+	}
+	args = rest
 	if len(args) == 0 {
 		usage(ctx.stderr)
 		return exitUsage
@@ -85,6 +99,38 @@ func run(ctx *appContext, args []string) int {
 	return exitOK
 }
 
+// parseGlobalFlags consumes any leading --db/--backend options and returns the
+// remaining command and arguments.
+func parseGlobalFlags(args []string) ([]string, error) {
+	i := 0
+	for i < len(args) {
+		arg := args[i]
+		switch {
+		case arg == "--db" || arg == "-db":
+			if i+1 >= len(args) {
+				return nil, errors.New("--db requires a path")
+			}
+			overrides.dbPath = args[i+1]
+			i += 2
+		case strings.HasPrefix(arg, "--db="):
+			overrides.dbPath = strings.TrimPrefix(arg, "--db=")
+			i++
+		case arg == "--backend" || arg == "-backend":
+			if i+1 >= len(args) {
+				return nil, errors.New("--backend requires a name")
+			}
+			overrides.backend = args[i+1]
+			i += 2
+		case strings.HasPrefix(arg, "--backend="):
+			overrides.backend = strings.TrimPrefix(arg, "--backend=")
+			i++
+		default:
+			return args[i:], nil
+		}
+	}
+	return nil, nil
+}
+
 func reportError(w io.Writer, err error) int {
 	if errors.Is(err, errSilent) {
 		return exitUsage
@@ -100,7 +146,7 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w, "snipkit — a fast terminal snippet manager")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Usage:")
-	fmt.Fprintln(w, "  snipkit <command> [args]")
+	fmt.Fprintln(w, "  snipkit [--db PATH] [--backend json|sqlite] <command> [args]")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Commands:")
 	for _, name := range sortedCommandNames() {

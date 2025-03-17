@@ -42,6 +42,12 @@ func openStore() (store.Store, config.Config, error) {
 	if err != nil {
 		return nil, config.Config{}, err
 	}
+	if overrides.backend != "" {
+		cfg.Backend = config.Backend(overrides.backend)
+	}
+	if overrides.dbPath != "" {
+		cfg.Path = overrides.dbPath
+	}
 	st, err := store.Open(string(cfg.Backend), cfg.Path)
 	if err != nil {
 		return nil, config.Config{}, err

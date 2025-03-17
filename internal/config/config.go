@@ -23,19 +23,30 @@ type Config struct {
 	Editor  string  // command used for interactive edits
 }
 
-// Load resolves configuration from built-in defaults. Environment overrides
-// are layered on top in a later change.
+// Load resolves configuration from built-in defaults layered with the
+// SNIPKIT_BACKEND, SNIPKIT_DB and editor environment variables.
 func Load() (Config, error) {
 	base, err := dataDir()
 	if err != nil {
 		return Config{}, err
 	}
-	cfg := Config{
-		Backend: BackendJSON,
-		Path:    filepath.Join(base, "snippets.json"),
-		Editor:  defaultEditor(),
+	cfg := Config{Backend: BackendJSON, Editor: defaultEditor()}
+	if b := strings.TrimSpace(os.Getenv("SNIPKIT_BACKEND")); b != "" {
+		cfg.Backend = Backend(b)
+	}
+	if p := strings.TrimSpace(os.Getenv("SNIPKIT_DB")); p != "" {
+		cfg.Path = p
+	} else {
+		cfg.Path = filepath.Join(base, defaultFile(cfg.Backend))
 	}
 	return cfg, nil
+}
+
+func defaultFile(b Backend) string {
+	if b == BackendSQLite {
+		return "snippets.db"
+	}
+	return "snippets.json"
 }
 
 func defaultEditor() string {
