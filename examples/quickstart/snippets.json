@@ -1,0 +1,6 @@
+[
+  { "title": "list files by size", "body": "ls -lhS", "lang": "sh", "tags": ["ls", "files"] },
+  { "title": "show git graph", "body": "git log --oneline --graph --decorate --all", "lang": "sh", "tags": ["git"] },
+  { "title": "kill process on port", "body": "lsof -ti tcp:$1 | xargs -r kill", "lang": "sh", "tags": ["net", "process"] },
+  { "title": "pretty-print json", "body": "jq . <file.json", "lang": "sh", "tags": ["json"] }
+]

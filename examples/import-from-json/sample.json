@@ -1,0 +1,4 @@
+[
+  { "title": "tar a directory", "body": "tar czf archive.tgz ./dir", "lang": "sh", "tags": ["tar", "archive"] },
+  { "title": "http server in cwd", "body": "python3 -m http.server 8000", "lang": "sh", "tags": ["http"] }
+]
