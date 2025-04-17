@@ -80,3 +80,22 @@ func TestStoreConformance(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateAndDeleteMissing(t *testing.T) {
+	for name, st := range newBackends(t) {
+		t.Run(name, func(t *testing.T) {
+			if err := st.Delete("ghost"); !errors.Is(err, ErrNotFound) {
+				t.Errorf("Delete(missing) = %v, want ErrNotFound", err)
+			}
+			if err := st.Update(sample("ghost", "x")); !errors.Is(err, ErrNotFound) {
+				t.Errorf("Update(missing) = %v, want ErrNotFound", err)
+			}
+		})
+	}
+}
+
+func TestOpenUnknownBackend(t *testing.T) {
+	if _, err := Open("mongodb", "/tmp/whatever"); err == nil {
+		t.Error("Open(mongodb) should return an error")
+	}
+}
