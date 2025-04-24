@@ -95,8 +95,12 @@ func (s *jsonStore) All() ([]snippet.Snippet, error) {
 	defer s.mu.Unlock()
 	out := make([]snippet.Snippet, len(s.data))
 	copy(out, s.data)
-	sort.Slice(out, func(i, j int) bool {
-		return out[i].CreatedAt.After(out[j].CreatedAt)
+	// Newest first, breaking ties on id so the order is stable across runs.
+	sort.SliceStable(out, func(i, j int) bool {
+		if !out[i].CreatedAt.Equal(out[j].CreatedAt) {
+			return out[i].CreatedAt.After(out[j].CreatedAt)
+		}
+		return out[i].ID < out[j].ID
 	})
 	return out, nil
 }

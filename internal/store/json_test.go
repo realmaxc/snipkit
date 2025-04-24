@@ -37,3 +37,28 @@ func TestJSONStoreRoundTrip(t *testing.T) {
 		t.Fatalf("Get(missing) = %v, want ErrNotFound", err)
 	}
 }
+
+func TestJSONStoreStableOrderForEqualTimes(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "s.json")
+	st, err := openJSON(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	for _, id := range []string{"ccc", "aaa", "bbb"} {
+		if _, err := st.Add(snippet.Snippet{ID: id, Body: "x", CreatedAt: now, UpdatedAt: now}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	all, err := st.All()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := []string{all[0].ID, all[1].ID, all[2].ID}
+	want := []string{"aaa", "bbb", "ccc"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("order = %v, want %v (ties broken by id)", got, want)
+		}
+	}
+}
