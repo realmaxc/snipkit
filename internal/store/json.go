@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"os"
@@ -41,6 +42,12 @@ func (s *jsonStore) load() error {
 	}
 	if err != nil {
 		return err
+	}
+	if len(bytes.TrimSpace(b)) == 0 {
+		// A truncated or freshly touched file is treated as empty rather
+		// than a hard error.
+		s.data = nil
+		return nil
 	}
 	var doc jsonDocument
 	if err := json.Unmarshal(b, &doc); err != nil {

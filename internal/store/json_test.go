@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -60,5 +61,23 @@ func TestJSONStoreStableOrderForEqualTimes(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("order = %v, want %v (ties broken by id)", got, want)
 		}
+	}
+}
+
+func TestJSONStoreToleratesEmptyFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "s.json")
+	if err := os.WriteFile(path, []byte("   \n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	st, err := openJSON(path)
+	if err != nil {
+		t.Fatalf("openJSON on empty file: %v", err)
+	}
+	all, err := st.All()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 0 {
+		t.Fatalf("All() = %d snippets, want 0", len(all))
 	}
 }
