@@ -42,3 +42,20 @@ func TestGetMissingIsNotFound(t *testing.T) {
 		t.Errorf("get missing exit = %d, want %d", code, exitNotFound)
 	}
 }
+
+func TestResolveByIDPrefix(t *testing.T) {
+	ctx, out, _ := newTestEnv(t, "echo hi")
+	if code := run(ctx, []string{"add", "-title", "greet"}); code != exitOK {
+		t.Fatalf("add exit")
+	}
+	id := strings.Fields(out.String())[1]
+
+	out.Reset()
+	ctx.stdin = strings.NewReader("")
+	if code := run(ctx, []string{"get", id[:3]}); code != exitOK {
+		t.Fatalf("get by prefix exit")
+	}
+	if !strings.Contains(out.String(), "echo hi") {
+		t.Errorf("get by prefix returned %q", out.String())
+	}
+}

@@ -11,7 +11,7 @@ func init() {
 
 func runEdit(ctx *appContext, args []string) error {
 	if len(args) != 1 {
-		fmt.Fprintln(ctx.stderr, "Usage: snipkit edit <id>")
+		fmt.Fprintln(ctx.stderr, "Usage: snipkit edit <id|prefix>")
 		return errSilent
 	}
 	st, cfg, err := openStore()
@@ -20,7 +20,11 @@ func runEdit(ctx *appContext, args []string) error {
 	}
 	defer func() { _ = st.Close() }()
 
-	sn, err := st.Get(args[0])
+	id, err := resolveID(st, args[0])
+	if err != nil {
+		return err
+	}
+	sn, err := st.Get(id)
 	if err != nil {
 		return err
 	}

@@ -8,7 +8,7 @@ func init() {
 
 func runRemove(ctx *appContext, args []string) error {
 	if len(args) == 0 {
-		fmt.Fprintln(ctx.stderr, "Usage: snipkit rm <id>...")
+		fmt.Fprintln(ctx.stderr, "Usage: snipkit rm <id|prefix>...")
 		return errSilent
 	}
 	st, _, err := openStore()
@@ -17,7 +17,11 @@ func runRemove(ctx *appContext, args []string) error {
 	}
 	defer func() { _ = st.Close() }()
 
-	for _, id := range args {
+	for _, arg := range args {
+		id, err := resolveID(st, arg)
+		if err != nil {
+			return err
+		}
 		if err := st.Delete(id); err != nil {
 			return err
 		}

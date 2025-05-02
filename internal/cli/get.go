@@ -8,7 +8,7 @@ func init() {
 
 func runGet(ctx *appContext, args []string) error {
 	if len(args) != 1 {
-		fmt.Fprintln(ctx.stderr, "Usage: snipkit get <id>")
+		fmt.Fprintln(ctx.stderr, "Usage: snipkit get <id|prefix>")
 		return errSilent
 	}
 	st, _, err := openStore()
@@ -17,7 +17,11 @@ func runGet(ctx *appContext, args []string) error {
 	}
 	defer func() { _ = st.Close() }()
 
-	sn, err := st.Get(args[0])
+	id, err := resolveID(st, args[0])
+	if err != nil {
+		return err
+	}
+	sn, err := st.Get(id)
 	if err != nil {
 		return err
 	}

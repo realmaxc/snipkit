@@ -156,3 +156,32 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Run 'snipkit <command> -h' for command-specific help.")
 }
+
+// resolveID turns a full id or an unambiguous id prefix into a full snippet id.
+// TODO: fall back to fuzzy id matching when a prefix is ambiguous.
+func resolveID(st store.Store, prefix string) (string, error) {
+	if prefix == "" {
+		return "", errors.New("empty id")
+	}
+	if _, err := st.Get(prefix); err == nil {
+		return prefix, nil // exact hit, no scan needed
+	}
+	all, err := st.All()
+	if err != nil {
+		return "", err
+	}
+	var matches []string
+	for _, s := range all {
+		if strings.HasPrefix(s.ID, prefix) {
+			matches = append(matches, s.ID)
+		}
+	}
+	switch len(matches) {
+	case 0:
+		return "", store.ErrNotFound
+	case 1:
+		return matches[0], nil
+	default:
+		return "", fmt.Errorf("id prefix %q is ambiguous (%d matches)", prefix, len(matches))
+	}
+}
