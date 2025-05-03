@@ -17,15 +17,23 @@ func runRemove(ctx *appContext, args []string) error {
 	}
 	defer func() { _ = st.Close() }()
 
+	failed := 0
 	for _, arg := range args {
 		id, err := resolveID(st, arg)
 		if err != nil {
-			return err
+			fmt.Fprintf(ctx.stderr, "snipkit: %s: %v\n", arg, err)
+			failed++
+			continue
 		}
 		if err := st.Delete(id); err != nil {
-			return err
+			fmt.Fprintf(ctx.stderr, "snipkit: %s: %v\n", arg, err)
+			failed++
+			continue
 		}
 		fmt.Fprintf(ctx.stdout, "removed %s\n", id)
+	}
+	if failed > 0 {
+		return fmt.Errorf("%d of %d ids could not be removed", failed, len(args))
 	}
 	return nil
 }
