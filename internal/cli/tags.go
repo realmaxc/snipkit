@@ -11,7 +11,6 @@ func init() {
 }
 
 func runTags(ctx *appContext, args []string) error {
-	_ = args
 	st, _, err := openStore()
 	if err != nil {
 		return err
