@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/realmaxc/snipkit/internal/snippet"
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // registers the pure-Go "sqlite" database/sql driver
 )
 
 // sqlStore persists snippets in a local SQLite database via the pure-Go

@@ -24,7 +24,7 @@ func runImport(ctx *appContext, args []string) error {
 		return errSilent
 	}
 
-	var reader io.Reader = ctx.stdin
+	reader := ctx.stdin
 	if *in != "" {
 		f, err := os.Open(*in)
 		if err != nil {
