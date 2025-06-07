@@ -1,5 +1,10 @@
 # snipkit
 
+[![CI](https://github.com/realmaxc/snipkit/actions/workflows/ci.yml/badge.svg)](https://github.com/realmaxc/snipkit/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/realmaxc/snipkit.svg)](https://pkg.go.dev/github.com/realmaxc/snipkit)
+[![Go Report Card](https://goreportcard.com/badge/github.com/realmaxc/snipkit)](https://goreportcard.com/report/github.com/realmaxc/snipkit)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A fast terminal snippet manager. Save shell one-liners and code snippets, then
 fuzzy-search and paste them back without ever leaving the terminal. Everything
 lives in a local file — no accounts, no sync server, no telemetry.

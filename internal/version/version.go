@@ -5,9 +5,9 @@
 package version
 
 var (
-	// Version is the semantic version of the build. It defaults to a dev
-	// marker for local `go build`/`go run` invocations.
-	Version = "0.0.0-dev"
+	// Version is the semantic version of the build. It defaults to the last
+	// tagged release for local `go build`/`go run` invocations.
+	Version = "0.1.0"
 	// Commit is the short git SHA the binary was built from.
 	Commit = "none"
 	// Date is the build timestamp in RFC 3339 form.
